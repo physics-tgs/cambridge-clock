@@ -33,7 +33,7 @@ body {
   line-height: 1;
   text-align: center;
   letter-spacing: 2px;
-  font-weight: 700;
+  font-weight: 500;
   margin-top: -8px;
 }
 
@@ -41,26 +41,26 @@ body {
 .centreLine {
   text-align: left;
   font-size: clamp(32px, 2.5vw, 48px);
-  font-weight: 700;
+  font-weight: 500;
   margin-top: -8px;
 }
 
 /* Rows block */
 .rows {
   display: grid;
-  gap: 16px;
-  font-size: clamp(32px, 2.5vw, 48px);
+  gap: 1px;
+  font-size: clamp(48px, 2.5vw, 48px);
 }
 
 .row {
   display: grid;
   grid-template-columns: auto 1fr; /* label | value */
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
 .label {
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -73,31 +73,50 @@ body {
 }
 
 input[type="text"] {
-  font-size: clamp(32px, 2.5vw, 48px);
+  font-size: clamp(48px, 2.5vw, 48px);
+  text-align: right;
   padding: 12px 16px;
-  border: 2px solid #000;
+  border: none;                     /* remove black border */
   border-radius: 10px;
-  background: #fff;
+  background: transparent;          /* JS sets background color */
+  transition: background-color 0.4s ease;
 }
 
-/* Widths */
+/* Responsive widths driven by `size` attribute via JS */
 #syllabus-input,
-#component-input {
-  width: 100%;             /* long fields */
-}
+#component-input,
 #duration-input {
-  width: 500px;            /* adjust as needed */
-  text-align: center;
+  width: auto;
+  max-width: 100%;
 }
+
+/* Center alignment for time-related fields */
+#duration-input,
 #starts-input {
-  width: 200px;            /* HH:MM */
-  text-align: center;
-}
-#ends-display {
-  min-width: 180px;
   text-align: right;
 }
 
+#starts-input {
+  width: 180px;  /* HH:MM fixed width is fine */
+}
+
+/* Bigger, bolder display for ending times */
+#ends-display,
+#extra-ends-display {
+  min-width: 200px;
+  text-align: right;
+  font-size: 1.3em;
+  font-weight: 500;
+}
+
+/* Make Starts match end times */
+#starts-input {
+  width: 200px;
+  font-size: 1.3em;          /* NEW — same scale as Ends */
+  font-weight: 500;          /* NEW — same boldness as Ends */
+}
+
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
