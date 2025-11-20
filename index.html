@@ -6,8 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <div class="wrap">
+
     <!-- Big clock -->
     <div id="digitalTime" class="mono" aria-live="polite">--:--:--</div>
 
@@ -16,31 +18,54 @@
 
     <!-- Rows -->
     <div class="rows">
+
       <div class="row">
         <div class="label">Syllabus:</div>
         <div class="value">
-          <input type="text" id="syllabus-input" placeholder="e.g., 0625 Physics" aria-label="Syllabus" />
+          <input
+            type="text"
+            id="syllabus-input"
+            placeholder="e.g., 0625 Physics"
+            aria-label="Syllabus"
+          />
         </div>
       </div>
 
       <div class="row">
         <div class="label">Component:</div>
         <div class="value">
-          <input type="text" id="component-input" placeholder="e.g., Paper 2 Structured" aria-label="Component" />
+          <input
+            type="text"
+            id="component-input"
+            placeholder="e.g., Paper 2"
+            aria-label="Component"
+          />
         </div>
       </div>
 
       <div class="row">
         <div class="label">Duration:</div>
         <div class="value">
-          <input type="text" id="duration-input" placeholder="e.g., 1 hour 45 minutes" aria-label="Duration" />
+          <input
+            type="text"
+            id="duration-input"
+            placeholder="1 hour 45 minutes"
+            aria-label="Duration"
+          />
         </div>
       </div>
 
       <div class="row">
         <div class="label">Starts:</div>
         <div class="value">
-          <input type="text" id="starts-input" placeholder="HH:MM" inputmode="numeric" class="mono" aria-label="Start time (HH:MM)" />
+          <input
+            type="text"
+            id="starts-input"
+            placeholder="HH:MM"
+            inputmode="numeric"
+            class="mono"
+            aria-label="Start time (HH:MM)"
+          />
         </div>
       </div>
 
@@ -50,109 +75,218 @@
           <span id="ends-display" class="mono">--:--</span>
         </div>
       </div>
+
+      <!-- Extra time row -->
+      <div class="row">
+        <div class="label">Extra time (25%):</div>
+        <div class="value">
+          <span id="extra-ends-display" class="mono">--:--</span>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <script>
-    const digitalTime   = document.getElementById("digitalTime");
-    const durationInput = document.getElementById("duration-input");
-    const startsInput   = document.getElementById("starts-input");
-    const endsDisplay   = document.getElementById("ends-display");
+    const digitalTime      = document.getElementById("digitalTime");
+    const syllabusInput    = document.getElementById("syllabus-input");
+    const componentInput   = document.getElementById("component-input");
+    const durationInput    = document.getElementById("duration-input");
+    const startsInput      = document.getElementById("starts-input");
+    const endsDisplay      = document.getElementById("ends-display");
+    const extraEndsDisplay = document.getElementById("extra-ends-display");
 
-    let intervalID = null;
     let currentEndTime = null;
+    let currentExtraEndTime = null;
 
-    function pad2(n) { return String(n).padStart(2, "0"); }
-    function formatHMS(date) {
-      return pad2(date.getHours())+":"+pad2(date.getMinutes())+":"+pad2(date.getSeconds());
-    }
-    function formatHM(date) {
-      return pad2(date.getHours())+":"+pad2(date.getMinutes());
+    function pad2(n) {
+      return String(n).padStart(2, "0");
     }
 
-    // Parse free-text duration into minutes
+    function formatHMS(d) {
+      return pad2(d.getHours()) + ":" +
+             pad2(d.getMinutes()) + ":" +
+             pad2(d.getSeconds());
+    }
+
+    function formatHM(d) {
+      return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+
+    // Truncate seconds so colour thresholds align to HH:MM:00
+    function truncateSeconds(date) {
+      const d = new Date(date);
+      d.setSeconds(0, 0);
+      return d;
+    }
+
+    // Parse "1 hour 30 minutes", "1:30", "90", etc.
     function parseDurationToMinutes(input) {
       if (!input) return NaN;
-      let s = String(input).trim().toLowerCase();
-      s = s.replace(/,/g, ".").replace(/\s+/g, " ");
-      let total = 0, matched = false;
+      let s = input.trim().toLowerCase()
+                    .replace(/,/g, ".")
+                    .replace(/\s+/g, " ");
 
-      const unitRe = /(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|min|m)\b/g;
+      let total = 0;
+      let matched = false;
+
+      const re = /(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|min|m)\b/g;
       let m;
-      while ((m = unitRe.exec(s)) !== null) {
+
+      while ((m = re.exec(s)) !== null) {
         const val = parseFloat(m[1]);
         const unit = m[2];
-        if (/^h|hour/.test(unit)) total += val*60;
-        else total += val;
+
+        if (/^h|hour/.test(unit)) {
+          total += val * 60;   // hours → minutes
+        } else {
+          total += val;        // already minutes
+        }
         matched = true;
       }
+
+      // "1:30" → 1 hour 30 minutes
       if (!matched) {
-        const colon = s.match(/^(\d+):(\d{1,2})$/);
-        if (colon) {
-          total += parseInt(colon[1],10)*60 + parseInt(colon[2],10);
+        const col = s.match(/^(\d+):(\d{1,2})$/);
+        if (col) {
+          total += parseInt(col[1], 10) * 60 + parseInt(col[2], 10);
           matched = true;
         }
       }
+
+      // "90" or "90.0"
       if (!matched) {
-        const numOnly = s.match(/^\d+(?:\.\d+)?$/);
-        if (numOnly) { total += parseFloat(numOnly[0]); matched = true; }
+        const num = s.match(/^\d+(?:\.\d+)?$/);
+        if (num) {
+          total += parseFloat(num[0]);
+          matched = true;
+        }
       }
+
       return matched ? Math.round(total) : NaN;
     }
 
-    function updateClock() {
-      const now = new Date();
-      digitalTime.textContent = formatHMS(now);
-      if (currentEndTime) tickBackground(currentEndTime);
+    // Auto-resize text inputs based on content length
+    function setupAutoSize(input, fallbackMinChars = 10) {
+      if (!input) return;
+      const base = input.placeholder
+        ? input.placeholder.length
+        : fallbackMinChars;
+
+      const updateSize = () => {
+        const len = input.value.length || base;
+        input.size = Math.max(base, len);
+      };
+
+      input.addEventListener("input", updateSize);
+      updateSize();
     }
-    setInterval(updateClock,1000);
+
+    // Apply auto-size to Syllabus, Component and Duration
+    setupAutoSize(syllabusInput);
+    setupAutoSize(componentInput);
+    setupAutoSize(durationInput, 20);
+
+    // Set background color for all text inputs
+    function setInputBackground(color) {
+      document.querySelectorAll("input[type='text']").forEach(inp => {
+        inp.style.backgroundColor = color;
+      });
+    }
+
+    // Clock update
+    function updateClock() {
+      const now = new Date(); // real time for display
+      digitalTime.textContent = formatHMS(now);
+
+      if (currentEndTime && currentExtraEndTime) {
+        tickBackground(currentEndTime, currentExtraEndTime);
+      }
+    }
+
+    setInterval(updateClock, 1000);
     updateClock();
 
     function calculateEnd() {
-      const [hh,mm] = (startsInput.value||"").split(":").map(s=>s.trim());
-      const startH = Number(hh), startM = Number(mm);
+      const [hh, mm] = (startsInput.value || "")
+        .split(":")
+        .map(s => s.trim());
+
+      const startH = Number(hh);
+      const startM = Number(mm);
       const durationMins = parseDurationToMinutes(durationInput.value);
 
-      if (!isFinite(startH)||!isFinite(startM)||!isFinite(durationMins)||durationMins<=0) {
-        endsDisplay.textContent="--:--";
-        currentEndTime=null;
+      if (!isFinite(startH) || !isFinite(startM) ||
+          !isFinite(durationMins) || durationMins <= 0) {
+        endsDisplay.textContent = "--:--";
+        extraEndsDisplay.textContent = "--:--";
+        currentEndTime = null;
+        currentExtraEndTime = null;
+
+        const color = "var(--bg-blue)";
+        document.body.style.backgroundColor = color;
+        setInputBackground(color);
         return;
       }
 
-      const start=new Date();
-      start.setHours(startH,startM,0,0);
-      const end=new Date(start.getTime()+durationMins*60000);
-      currentEndTime=end;
-      endsDisplay.textContent=formatHM(end);
+      const start = new Date();
+      start.setHours(startH, startM, 0, 0);
 
-      if (intervalID) clearInterval(intervalID);
-      intervalID=setInterval(()=>tickBackground(end),1000);
-      tickBackground(end);
+      const end = new Date(start.getTime() + durationMins * 60000);
+
+      // Extra time: +25% of the duration
+      const extraMinutes = durationMins * 0.25;
+      const extraEnd = new Date(end.getTime() + extraMinutes * 60000);
+
+      currentEndTime = end;
+      currentExtraEndTime = extraEnd;
+
+      endsDisplay.textContent      = formatHM(end);
+      extraEndsDisplay.textContent = formatHM(extraEnd);
+
+      tickBackground(end, extraEnd);
     }
 
-    function tickBackground(endTime) {
-      const now=new Date();
-      const diff=endTime-now;
-      if (diff<=0) {
-        if (intervalID){clearInterval(intervalID);intervalID=null;}
-        document.body.style.backgroundColor="var(--bg-red)";
-      } else if (diff<=5*60*1000) {
-        document.body.style.backgroundColor="var(--bg-yellow)";
+    // Colour logic:
+    //  - Blue: more than 5 min before normal end
+    //  - Yellow: within 5 min of normal end (until 5 min before extra end)
+    //  - Red: within 5 min of extra end, and after
+    function tickBackground(endTime, extraEndTime) {
+      const now = truncateSeconds(new Date()); // ignore seconds for thresholds
+      const msToEnd   = endTime - now;
+      const msToExtra = extraEndTime - now;
+      const fiveMin = 5 * 60 * 1000;
+
+      if (msToExtra <= fiveMin) {
+        const color = "var(--bg-red)";
+        document.body.style.backgroundColor = color;
+        setInputBackground(color);
+      } else if (msToEnd <= fiveMin) {
+        const color = "var(--bg-yellow)";
+        document.body.style.backgroundColor = color;
+        setInputBackground(color);
       } else {
-        document.body.style.backgroundColor="var(--bg-blue)";
+        const color = "var(--bg-blue)";
+        document.body.style.backgroundColor = color;
+        setInputBackground(color);
       }
     }
 
-    durationInput.addEventListener("input",calculateEnd);
-    startsInput.addEventListener("input",calculateEnd);
+    durationInput.addEventListener("input", calculateEnd);
+    startsInput.addEventListener("input", calculateEnd);
 
-    (function setStartsNow(){
-      const now=new Date();
-      startsInput.value=pad2(now.getHours())+":"+pad2(now.getMinutes());
+    // Prefill "Starts" with current time
+    (function autoSetStart() {
+      const now = new Date();
+      startsInput.value = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
     })();
 
-    durationInput.value="1 hour 45 minutes";
+    // Default duration
+    durationInput.value = "1 hour 45 minutes";
     calculateEnd();
+
+    // Ensure initial input background matches initial body color
+    setInputBackground("var(--bg-blue)");
   </script>
 </body>
 </html>
