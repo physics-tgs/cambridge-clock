@@ -1,7 +1,7 @@
 :root {
   --bg-blue: #ADD8E6;
   --bg-yellow: #FFFACD;
-  --bg-red: #F08080;  
+  --bg-red: #F08080;
   --text: #000;
   --gap: 24px;
 }
@@ -112,11 +112,29 @@ input[type="text"] {
 /* Make Starts match end times */
 #starts-input {
   width: 200px;
-  font-size: 1.3em;          /* NEW — same scale as Ends */
-  font-weight: 500;          /* NEW — same boldness as Ends */
+  font-size: 1.3em;          /* same scale as Ends */
+  font-weight: 500;          /* same boldness as Ends */
 }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
+}
+
+/* Minimal chevron toggle */
+.chevron {
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.45;
+  line-height: 1;
+  padding: 0 6px;
+}
+
+.chevron:hover {
+  opacity: 0.9;
+}
+
+.chevron:focus {
+  outline: 2px solid rgba(0,0,0,0.35);
+  border-radius: 6px;
 }
