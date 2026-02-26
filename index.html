@@ -76,8 +76,24 @@
         </div>
       </div>
 
-      <!-- Extra time row -->
+      <!-- Minimal chevron toggle row -->
       <div class="row">
+        <div class="label"></div>
+        <div class="value">
+          <span
+            id="toggle-extra"
+            class="chevron mono"
+            role="button"
+            tabindex="0"
+            aria-pressed="true"
+            aria-label="Toggle extra time display"
+            title="Toggle extra time"
+          >▼</span>
+        </div>
+      </div>
+
+      <!-- Extra time row -->
+      <div id="extra-row" class="row">
         <div class="label">Extra time (25%):</div>
         <div class="value">
           <span id="extra-ends-display" class="mono">--:--</span>
@@ -95,9 +111,12 @@
     const startsInput      = document.getElementById("starts-input");
     const endsDisplay      = document.getElementById("ends-display");
     const extraEndsDisplay = document.getElementById("extra-ends-display");
+    const extraRow         = document.getElementById("extra-row");
+    const toggleExtraBtn   = document.getElementById("toggle-extra");
 
     let currentEndTime = null;
     let currentExtraEndTime = null;
+    let showExtra = true;
 
     function pad2(n) {
       return String(n).padStart(2, "0");
@@ -137,11 +156,9 @@
         const val = parseFloat(m[1]);
         const unit = m[2];
 
-        if (/^h|hour/.test(unit)) {
-          total += val * 60;   // hours → minutes
-        } else {
-          total += val;        // already minutes
-        }
+        if (/^h|hour/.test(unit)) total += val * 60;
+        else total += val;
+
         matched = true;
       }
 
@@ -169,9 +186,7 @@
     // Auto-resize text inputs based on content length
     function setupAutoSize(input, fallbackMinChars = 10) {
       if (!input) return;
-      const base = input.placeholder
-        ? input.placeholder.length
-        : fallbackMinChars;
+      const base = input.placeholder ? input.placeholder.length : fallbackMinChars;
 
       const updateSize = () => {
         const len = input.value.length || base;
@@ -182,7 +197,6 @@
       updateSize();
     }
 
-    // Apply auto-size to Syllabus, Component and Duration
     setupAutoSize(syllabusInput);
     setupAutoSize(componentInput);
     setupAutoSize(durationInput, 20);
@@ -196,7 +210,7 @@
 
     // Clock update
     function updateClock() {
-      const now = new Date(); // real time for display
+      const now = new Date();
       digitalTime.textContent = formatHMS(now);
 
       if (currentEndTime && currentExtraEndTime) {
@@ -208,9 +222,7 @@
     updateClock();
 
     function calculateEnd() {
-      const [hh, mm] = (startsInput.value || "")
-        .split(":")
-        .map(s => s.trim());
+      const [hh, mm] = (startsInput.value || "").split(":").map(s => s.trim());
 
       const startH = Number(hh);
       const startM = Number(mm);
@@ -218,8 +230,10 @@
 
       if (!isFinite(startH) || !isFinite(startM) ||
           !isFinite(durationMins) || durationMins <= 0) {
+
         endsDisplay.textContent = "--:--";
-        extraEndsDisplay.textContent = "--:--";
+        if (showExtra) extraEndsDisplay.textContent = "--:--";
+
         currentEndTime = null;
         currentExtraEndTime = null;
 
@@ -241,8 +255,8 @@
       currentEndTime = end;
       currentExtraEndTime = extraEnd;
 
-      endsDisplay.textContent      = formatHM(end);
-      extraEndsDisplay.textContent = formatHM(extraEnd);
+      endsDisplay.textContent = formatHM(end);
+      if (showExtra) extraEndsDisplay.textContent = formatHM(extraEnd);
 
       tickBackground(end, extraEnd);
     }
@@ -252,25 +266,41 @@
     //  - Yellow: within 5 min of normal end (until 5 min before extra end)
     //  - Red: within 5 min of extra end, and after
     function tickBackground(endTime, extraEndTime) {
-      const now = truncateSeconds(new Date()); // ignore seconds for thresholds
+      const now = truncateSeconds(new Date());
       const msToEnd   = endTime - now;
       const msToExtra = extraEndTime - now;
       const fiveMin = 5 * 60 * 1000;
 
-      if (msToExtra <= fiveMin) {
-        const color = "var(--bg-red)";
-        document.body.style.backgroundColor = color;
-        setInputBackground(color);
-      } else if (msToEnd <= fiveMin) {
-        const color = "var(--bg-yellow)";
-        document.body.style.backgroundColor = color;
-        setInputBackground(color);
-      } else {
-        const color = "var(--bg-blue)";
-        document.body.style.backgroundColor = color;
-        setInputBackground(color);
-      }
+      let color;
+      if (msToExtra <= fiveMin) color = "var(--bg-red)";
+      else if (msToEnd <= fiveMin) color = "var(--bg-yellow)";
+      else color = "var(--bg-blue)";
+
+      document.body.style.backgroundColor = color;
+      setInputBackground(color);
     }
+
+    function setExtraVisibility(visible) {
+      showExtra = visible;
+      extraRow.style.display = visible ? "" : "none";
+      toggleExtraBtn.textContent = visible ? "▼" : "►";
+      toggleExtraBtn.setAttribute("aria-pressed", String(visible));
+
+      // refresh the displayed end-times when toggling
+      calculateEnd();
+    }
+
+    function toggleExtra() {
+      setExtraVisibility(!showExtra);
+    }
+
+    toggleExtraBtn.addEventListener("click", toggleExtra);
+    toggleExtraBtn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleExtra();
+      }
+    });
 
     durationInput.addEventListener("input", calculateEnd);
     startsInput.addEventListener("input", calculateEnd);
@@ -283,7 +313,7 @@
 
     // Default duration
     durationInput.value = "1 hour 45 minutes";
-    calculateEnd();
+    setExtraVisibility(true);
 
     // Ensure initial input background matches initial body color
     setInputBackground("var(--bg-blue)");
