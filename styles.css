@@ -5,9 +5,9 @@
   --text: #000;
   --gap: 24px;
 }
-
+ 
 html, body { height: 100%; margin: 0; }
-
+ 
 body {
   background-color: var(--bg-blue);
   color: var(--text);
@@ -18,7 +18,7 @@ body {
   transition: background-color 0.5s ease;
   padding: 40px 32px 32px;         /* top | sides | bottom */
 }
-
+ 
 .wrap {
   width: min(1600px, 95vw);
   display: flex;
@@ -26,7 +26,7 @@ body {
   gap: var(--gap);
   align-items: stretch;
 }
-
+ 
 /* Big clock */
 #digitalTime {
   font-size: clamp(100px, 12vw, 400px);
@@ -36,7 +36,7 @@ body {
   font-weight: 500;
   margin-top: -8px;
 }
-
+ 
 /* Centre line left-aligned */
 .centreLine {
   text-align: left;
@@ -44,26 +44,26 @@ body {
   font-weight: 500;
   margin-top: -8px;
 }
-
+ 
 /* Rows block */
 .rows {
   display: grid;
   gap: 1px;
   font-size: clamp(48px, 2.5vw, 48px);
 }
-
+ 
 .row {
   display: grid;
   grid-template-columns: auto 1fr; /* label | value */
   align-items: center;
   gap: 8px;
 }
-
+ 
 .label {
   font-weight: 500;
   white-space: nowrap;
 }
-
+ 
 .value {
   display: inline-flex;
   align-items: center;
@@ -71,7 +71,7 @@ body {
   gap: 12px;
   width: 100%;
 }
-
+ 
 input[type="text"] {
   font-size: clamp(28px, 1.8vw, 32px); /* was clamp(48px, 2.5vw, 48px) */
   text-align: right;
@@ -81,25 +81,32 @@ input[type="text"] {
   background: transparent;          /* JS sets background color */
   transition: background-color 0.4s ease;
 }
-
-/* Responsive widths driven by `size` attribute via JS */
+ 
+/* Syllabus & component fill all remaining space in the row */
 #syllabus-input,
-#component-input,
+#component-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-size: clamp(16px, 2.5vw, 48px); /* starts at 48px, shrinks with viewport/text */
+}
+ 
+/* Duration keeps auto width */
 #duration-input {
   width: auto;
   max-width: 100%;
 }
-
+ 
 /* Center alignment for time-related fields */
 #duration-input,
 #starts-input {
   text-align: right;
 }
-
+ 
 #starts-input {
   width: 180px;  /* HH:MM fixed width is fine */
 }
-
+ 
 /* Bigger, bolder display for ending times */
 #ends-display,
 #extra-ends-display {
@@ -108,19 +115,19 @@ input[type="text"] {
   font-size: 1.3em;
   font-weight: 500;
 }
-
+ 
 /* Make Starts match end times */
 #starts-input {
   width: 200px;
   font-size: 1.3em;          /* same scale as Ends */
   font-weight: 500;          /* same boldness as Ends */
 }
-
+ 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
-
+ 
 /* Minimal chevron toggle */
 .chevron {
   cursor: pointer;
@@ -129,11 +136,11 @@ input[type="text"] {
   line-height: 1;
   padding: 0 6px;
 }
-
+ 
 .chevron:hover {
   opacity: 0.9;
 }
-
+ 
 .chevron:focus {
   outline: 2px solid rgba(0,0,0,0.35);
   border-radius: 6px;
