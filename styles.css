@@ -73,7 +73,7 @@ body {
 }
  
 input[type="text"] {
-  font-size: clamp(28px, 1.8vw, 32px); /* was clamp(48px, 2.5vw, 48px) */
+  font-size: clamp(48px, 2.5vw, 48px); /* was clamp(48px, 2.5vw, 48px) */
   text-align: right;
   padding: 12px 16px;
   border: none;                     /* remove black border */
